@@ -2,11 +2,14 @@ import telebot
 
 from config import BOT_TOKEN
 from keyboards import main_keyboard
+from database import create_table, save_message
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 waiting_users = set()
+
+create_table()
 
 
 @bot.message_handler(commands=["start"])
@@ -44,6 +47,17 @@ def receive_message(message):
         return
 
     waiting_users.remove(user_id)
+
+    username = message.from_user.username
+    first_name = message.from_user.first_name
+    text = message.text
+
+    save_message(
+        sender_id=user_id,
+        username=username,
+        first_name=first_name,
+        message=text
+    )
 
     print("----- NEW MESSAGE -----")
     print("User ID:", user_id)
