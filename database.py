@@ -56,4 +56,28 @@ def save_message(
     ))
 
     connection.commit()
+
+    message_id = cursor.lastrowid
+
     connection.close()
+
+    return message_id
+
+
+def get_message(message_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            sender_id,
+            receiver_id
+        FROM messages
+        WHERE id = ?
+    """, (message_id,))
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result
