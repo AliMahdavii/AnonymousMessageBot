@@ -13,14 +13,39 @@ from database import (
     get_waiting_reply,
     delete_waiting_reply
 )
-from keyboards import main_keyboard, reply_keyboard
+from keyboards import (
+    main_keyboard,
+    reply_keyboard,
+    language_keyboard
+)
+from telebot.types import BotCommand, MenuButtonCommands
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
-create_table()
+def setup_bot_menu():
+    commands = [
+        BotCommand("start", "شروع کار با بات"),
+        BotCommand("language", "تغییر زبان"),
+        BotCommand("my_link", "لینک اختصاصی من"),
+        BotCommand("my_messages", "پیام‌های دریافتی")
+    ]
 
+    bot.set_my_commands(commands)
+
+    bot.set_chat_menu_button(
+        menu_button=MenuButtonCommands()
+    )
+
+
+create_table()
+setup_bot_menu()
+
+
+# =========================
+# START
+# =========================
 
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -67,7 +92,26 @@ def start(message):
     )
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "my_link")
+# =========================
+# LANGUAGE
+# =========================
+
+@bot.message_handler(commands=["language"])
+def language_command(message):
+    bot.send_message(
+        message.chat.id,
+        "🌐 زبان را انتخاب کن:",
+        reply_markup=language_keyboard()
+    )
+
+
+# =========================
+# MY LINK
+# =========================
+
+@bot.callback_query_handler(
+    func=lambda call: call.data == "my_link"
+)
 def my_link_callback(call):
     bot.answer_callback_query(call.id)
 
@@ -83,6 +127,25 @@ def my_link_callback(call):
         "برای شما پیام ناشناس بفرستند."
     )
 
+
+@bot.message_handler(commands=["my_link"])
+def my_link_command(message):
+    bot_info = bot.get_me()
+
+    link = f"https://t.me/{bot_info.username}?start={message.from_user.id}"
+
+    bot.send_message(
+        message.chat.id,
+        "🔗 لینک اختصاصی دریافت پیام شما:\n\n"
+        f"{link}\n\n"
+        "این لینک را برای دیگران ارسال کنید تا بتوانند "
+        "برای شما پیام ناشناس بفرستند."
+    )
+
+
+# =========================
+# MY MESSAGES
+# =========================
 
 @bot.callback_query_handler(
     func=lambda call: call.data == "my_messages"
@@ -114,6 +177,37 @@ def my_messages_callback(call):
             reply_markup=reply_keyboard(message_id)
         )
 
+
+@bot.message_handler(commands=["my_messages"])
+def my_messages_command(message):
+    receiver_id = message.from_user.id
+
+    messages = get_received_messages(receiver_id)
+
+    if not messages:
+        bot.send_message(
+            message.chat.id,
+            "📭 هنوز هیچ پیام ناشناسی دریافت نکردی."
+        )
+        return
+
+    for message_id, text, created_at in messages:
+        message_text = (
+            "📩 پیام ناشناس\n\n"
+            f"💬 {text}\n\n"
+            f"🕐 {created_at}"
+        )
+
+        bot.send_message(
+            message.chat.id,
+            message_text,
+            reply_markup=reply_keyboard(message_id)
+        )
+
+
+# =========================
+# REPLY
+# =========================
 
 @bot.callback_query_handler(
     func=lambda call: call.data.startswith("reply:")
@@ -159,6 +253,10 @@ def reply_callback(call):
         "✍️ پاسخ خودت رو بنویس."
     )
 
+
+# =========================
+# RECEIVE TEXT MESSAGE
+# =========================
 
 @bot.message_handler(content_types=["text"])
 def receive_message(message):
@@ -234,6 +332,7 @@ def receive_message(message):
         reply_markup=reply_keyboard(message_id)
     )
 
+    # Console logging
     print("----- NEW MESSAGE -----")
     print("Sender ID:", sender_id)
     print("Receiver ID:", receiver_id)
@@ -247,6 +346,10 @@ def receive_message(message):
         "✅ پیامت با موفقیت دریافت شد."
     )
 
+
+# =========================
+# RUN BOT
+# =========================
 
 print("Bot is running...")
 

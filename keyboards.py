@@ -31,3 +31,24 @@ def reply_keyboard(message_id):
     keyboard.add(reply_button)
 
     return keyboard
+
+
+def language_keyboard():
+    keyboard = InlineKeyboardMarkup()
+
+    persian_button = InlineKeyboardButton(
+        "🇮🇷 فارسی",
+        callback_data="language:fa"
+    )
+
+    english_button = InlineKeyboardButton(
+        "🇬🇧 English",
+        callback_data="language:en"
+    )
+
+    keyboard.add(
+        persian_button,
+        english_button
+    )
+
+    return keyboard
