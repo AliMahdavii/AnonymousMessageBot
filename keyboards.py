@@ -9,7 +9,13 @@ def main_keyboard():
         callback_data="my_link"
     )
 
+    messages_button = InlineKeyboardButton(
+        "📥 پیام‌های دریافتی",
+        callback_data="my_messages"
+    )
+
     keyboard.add(link_button)
+    keyboard.add(messages_button)
 
     return keyboard
 

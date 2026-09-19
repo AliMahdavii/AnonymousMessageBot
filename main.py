@@ -5,6 +5,7 @@ from database import (
     create_table,
     save_message,
     get_message,
+    get_received_messages,
     save_waiting_user,
     get_waiting_user,
     delete_waiting_user,
@@ -81,6 +82,37 @@ def my_link_callback(call):
         "این لینک را برای دیگران ارسال کنید تا بتوانند "
         "برای شما پیام ناشناس بفرستند."
     )
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data == "my_messages"
+)
+def my_messages_callback(call):
+    bot.answer_callback_query(call.id)
+
+    receiver_id = call.from_user.id
+
+    messages = get_received_messages(receiver_id)
+
+    if not messages:
+        bot.send_message(
+            call.message.chat.id,
+            "📭 هنوز هیچ پیام ناشناسی دریافت نکردی."
+        )
+        return
+
+    for message_id, text, created_at in messages:
+        message_text = (
+            "📩 پیام ناشناس\n\n"
+            f"💬 {text}\n\n"
+            f"🕐 {created_at}"
+        )
+
+        bot.send_message(
+            call.message.chat.id,
+            message_text,
+            reply_markup=reply_keyboard(message_id)
+        )
 
 
 @bot.callback_query_handler(

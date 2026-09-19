@@ -97,6 +97,27 @@ def get_message(message_id):
     return result
 
 
+def get_received_messages(receiver_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            id,
+            message,
+            created_at
+        FROM messages
+        WHERE receiver_id = ?
+        ORDER BY id DESC
+    """, (receiver_id,))
+
+    results = cursor.fetchall()
+
+    connection.close()
+
+    return results
+
+
 def save_waiting_user(user_id, receiver_id):
     connection = get_connection()
     cursor = connection.cursor()
