@@ -16,6 +16,7 @@ def create_table():
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
             username TEXT,
             first_name TEXT,
             message TEXT NOT NULL,
@@ -27,20 +28,28 @@ def create_table():
     connection.close()
 
 
-def save_message(sender_id, username, first_name, message):
+def save_message(
+    sender_id,
+    receiver_id,
+    username,
+    first_name,
+    message
+):
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
         INSERT INTO messages (
             sender_id,
+            receiver_id,
             username,
             first_name,
             message
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         sender_id,
+        receiver_id,
         username,
         first_name,
         message

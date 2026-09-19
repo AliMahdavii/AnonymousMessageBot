@@ -9,6 +9,12 @@ def main_keyboard():
         callback_data="send_message"
     )
 
+    link_button = InlineKeyboardButton(
+        "🔗 لینک اختصاصی من",
+        callback_data="my_link"
+    )
+
     keyboard.add(send_button)
+    keyboard.add(link_button)
 
     return keyboard
