@@ -1,15 +1,21 @@
 import telebot
 
 from config import BOT_TOKEN
-from database import create_table, save_message, get_message
+from database import (
+    create_table,
+    save_message,
+    get_message,
+    save_waiting_user,
+    get_waiting_user,
+    delete_waiting_user,
+    save_waiting_reply,
+    get_waiting_reply,
+    delete_waiting_reply
+)
 from keyboards import main_keyboard, reply_keyboard
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
-
-
-waiting_users = {}
-waiting_for_reply = {}
 
 
 create_table()
@@ -30,7 +36,10 @@ def start(message):
             )
             return
 
-        waiting_users[message.from_user.id] = receiver_id
+        save_waiting_user(
+            message.from_user.id,
+            receiver_id
+        )
 
         bot.send_message(
             message.chat.id,
@@ -108,7 +117,10 @@ def reply_callback(call):
         )
         return
 
-    waiting_for_reply[call.from_user.id] = message_id
+    save_waiting_reply(
+        call.from_user.id,
+        message_id
+    )
 
     bot.send_message(
         call.message.chat.id,
@@ -124,8 +136,10 @@ def receive_message(message):
     # Anonymous reply
     # -------------------------
 
-    if user_id in waiting_for_reply:
-        message_id = waiting_for_reply.pop(user_id)
+    message_id = get_waiting_reply(user_id)
+
+    if message_id:
+        delete_waiting_reply(user_id)
 
         result = get_message(message_id)
 
@@ -157,10 +171,12 @@ def receive_message(message):
 
     sender_id = user_id
 
-    if sender_id not in waiting_users:
+    receiver_id = get_waiting_user(sender_id)
+
+    if receiver_id is None:
         return
 
-    receiver_id = waiting_users.pop(sender_id)
+    delete_waiting_user(sender_id)
 
     username = message.from_user.username
     first_name = message.from_user.first_name

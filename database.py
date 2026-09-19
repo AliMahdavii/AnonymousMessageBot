@@ -24,6 +24,20 @@ def create_table():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS waiting_users (
+            user_id INTEGER PRIMARY KEY,
+            receiver_id INTEGER NOT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS waiting_replies (
+            user_id INTEGER PRIMARY KEY,
+            message_id INTEGER NOT NULL
+        )
+    """)
+
     connection.commit()
     connection.close()
 
@@ -81,3 +95,107 @@ def get_message(message_id):
     connection.close()
 
     return result
+
+
+def save_waiting_user(user_id, receiver_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT OR REPLACE INTO waiting_users (
+            user_id,
+            receiver_id
+        )
+        VALUES (?, ?)
+    """, (
+        user_id,
+        receiver_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+
+def get_waiting_user(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT receiver_id
+        FROM waiting_users
+        WHERE user_id = ?
+    """, (user_id,))
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    if result:
+        return result[0]
+
+    return None
+
+
+def delete_waiting_user(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        DELETE FROM waiting_users
+        WHERE user_id = ?
+    """, (user_id,))
+
+    connection.commit()
+    connection.close()
+
+
+def save_waiting_reply(user_id, message_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT OR REPLACE INTO waiting_replies (
+            user_id,
+            message_id
+        )
+        VALUES (?, ?)
+    """, (
+        user_id,
+        message_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+
+def get_waiting_reply(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT message_id
+        FROM waiting_replies
+        WHERE user_id = ?
+    """, (user_id,))
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    if result:
+        return result[0]
+
+    return None
+
+
+def delete_waiting_reply(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        DELETE FROM waiting_replies
+        WHERE user_id = ?
+    """, (user_id,))
+
+    connection.commit()
+    connection.close()
