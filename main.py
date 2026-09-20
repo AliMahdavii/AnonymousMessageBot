@@ -11,7 +11,9 @@ from database import (
     delete_waiting_user,
     save_waiting_reply,
     get_waiting_reply,
-    delete_waiting_reply
+    delete_waiting_reply,
+    save_user_language,
+    get_user_language
 )
 from keyboards import (
     main_keyboard,
@@ -102,6 +104,40 @@ def language_command(message):
         message.chat.id,
         "🌐 زبان را انتخاب کن:",
         reply_markup=language_keyboard()
+    )
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("language:")
+)
+def language_callback(call):
+    language = call.data.split(":")[1]
+
+    if language not in ("fa", "en"):
+        bot.answer_callback_query(
+            call.id,
+            "❌ زبان نامعتبر است."
+        )
+        return
+
+    save_user_language(
+        call.from_user.id,
+        language
+    )
+
+    bot.answer_callback_query(
+        call.id,
+        "✅ زبان تغییر کرد."
+    )
+
+    if language == "fa":
+        text = "🇮🇷 زبان با موفقیت به فارسی تغییر کرد."
+    else:
+        text = "🇬🇧 Language changed to English."
+
+    bot.send_message(
+        call.message.chat.id,
+        text
     )
 
 
