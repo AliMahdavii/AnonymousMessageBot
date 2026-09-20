@@ -98,7 +98,7 @@ def start(message):
     bot.send_message(
         message.chat.id,
         text,
-        reply_markup=main_keyboard()
+        reply_markup=main_keyboard(language)
     )
 
 
@@ -224,7 +224,7 @@ def my_messages_callback(call):
         bot.send_message(
             call.message.chat.id,
             message_text,
-            reply_markup=reply_keyboard(message_id)
+            reply_markup=reply_keyboard(message_id, receiver_language)
         )
 
 
@@ -412,7 +412,7 @@ def receive_message(message):
     bot.send_message(
         receiver_id,
         receiver_text,
-        reply_markup=reply_keyboard(message_id)
+        reply_markup=reply_keyboard(message_id, receiver_language)
     )
 
     # Console logging
