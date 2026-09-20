@@ -21,6 +21,7 @@ from keyboards import (
     language_keyboard
 )
 from telebot.types import BotCommand, MenuButtonCommands
+from translations import get_text
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -58,9 +59,14 @@ def start(message):
         try:
             receiver_id = int(parts[1])
         except ValueError:
+            language = get_user_language(message.from_user.id)
+
             bot.send_message(
                 message.chat.id,
-                "❌ لینک نامعتبر است."
+                get_text(
+                    language,
+                    "invalid_link"
+                )
             )
             return
 
@@ -69,22 +75,24 @@ def start(message):
             receiver_id
         )
 
+        language = get_user_language(message.from_user.id)
+
         bot.send_message(
             message.chat.id,
-            "👋 سلام!\n\n"
-            "اینجا می‌تونی یک پیام ناشناس ارسال کنی.\n\n"
-            "🔒 هویتت برای گیرنده نمایش داده نمی‌شود.\n\n"
-            "✍️ پیامت رو بنویس و ارسال کن 👇"
+            get_text(
+                language,
+                "anonymous_message_prompt"
+            )
         )
 
         return
 
     # Normal /start
-    text = (
-        "👋 سلام!\n\n"
-        "به پیام ناشناس خوش اومدی.\n\n"
-        "🔒 می‌تونی لینک اختصاصی خودت رو دریافت کنی "
-        "تا دیگران برات پیام ناشناس بفرستن."
+    language = get_user_language(message.from_user.id)
+
+    text = get_text(
+        language,
+        "welcome"
     )
 
     bot.send_message(
@@ -100,9 +108,11 @@ def start(message):
 
 @bot.message_handler(commands=["language"])
 def language_command(message):
+    language = get_user_language(message.from_user.id)
+
     bot.send_message(
         message.chat.id,
-        "🌐 زبان را انتخاب کن:",
+        get_text(language, "language_select"),
         reply_markup=language_keyboard()
     )
 
@@ -116,7 +126,7 @@ def language_callback(call):
     if language not in ("fa", "en"):
         bot.answer_callback_query(
             call.id,
-            "❌ زبان نامعتبر است."
+            "❌ Invalid language."
         )
         return
 
@@ -125,25 +135,17 @@ def language_callback(call):
         language
     )
 
-    bot.answer_callback_query(
-        call.id,
-        "✅ زبان تغییر کرد."
-    )
-
-    if language == "fa":
-        text = "🇮🇷 زبان با موفقیت به فارسی تغییر کرد."
-    else:
-        text = "🇬🇧 Language changed to English."
+    bot.answer_callback_query(call.id)
 
     bot.send_message(
         call.message.chat.id,
-        text
+        get_text(language, "language_changed")
     )
-
 
 # =========================
 # MY LINK
 # =========================
+
 
 @bot.callback_query_handler(
     func=lambda call: call.data == "my_link"
@@ -155,12 +157,15 @@ def my_link_callback(call):
 
     link = f"https://t.me/{bot_info.username}?start={call.from_user.id}"
 
+    language = get_user_language(call.from_user.id)
+
     bot.send_message(
         call.message.chat.id,
-        "🔗 لینک اختصاصی دریافت پیام شما:\n\n"
-        f"{link}\n\n"
-        "این لینک را برای دیگران ارسال کنید تا بتوانند "
-        "برای شما پیام ناشناس بفرستند."
+        get_text(
+            language,
+            "my_link",
+            link=link
+        )
     )
 
 
@@ -170,12 +175,15 @@ def my_link_command(message):
 
     link = f"https://t.me/{bot_info.username}?start={message.from_user.id}"
 
+    language = get_user_language(message.from_user.id)
+
     bot.send_message(
         message.chat.id,
-        "🔗 لینک اختصاصی دریافت پیام شما:\n\n"
-        f"{link}\n\n"
-        "این لینک را برای دیگران ارسال کنید تا بتوانند "
-        "برای شما پیام ناشناس بفرستند."
+        get_text(
+            language,
+            "my_link",
+            link=link
+        )
     )
 
 
@@ -193,18 +201,24 @@ def my_messages_callback(call):
 
     messages = get_received_messages(receiver_id)
 
+    receiver_language = get_user_language(receiver_id)
+
     if not messages:
         bot.send_message(
             call.message.chat.id,
-            "📭 هنوز هیچ پیام ناشناسی دریافت نکردی."
+            get_text(
+                receiver_language,
+                "no_messages"
+            )
         )
         return
 
     for message_id, text, created_at in messages:
-        message_text = (
-            "📩 پیام ناشناس\n\n"
-            f"💬 {text}\n\n"
-            f"🕐 {created_at}"
+        message_text = get_text(
+            receiver_language,
+            "anonymous_message",
+            text=text,
+            created_at=created_at
         )
 
         bot.send_message(
@@ -221,17 +235,25 @@ def my_messages_command(message):
     messages = get_received_messages(receiver_id)
 
     if not messages:
+        language = get_user_language(message.from_user.id)
+
         bot.send_message(
             message.chat.id,
-            "📭 هنوز هیچ پیام ناشناسی دریافت نکردی."
+            get_text(
+                language,
+                "no_messages"
+            )
         )
         return
 
+    language = get_user_language(receiver_id)
+
     for message_id, text, created_at in messages:
-        message_text = (
-            "📩 پیام ناشناس\n\n"
-            f"💬 {text}\n\n"
-            f"🕐 {created_at}"
+        message_text = get_text(
+            language,
+            "anonymous_message",
+            text=text,
+            created_at=created_at
         )
 
         bot.send_message(
@@ -254,18 +276,22 @@ def reply_callback(call):
     try:
         message_id = int(call.data.split(":")[1])
     except (ValueError, IndexError):
+        language = get_user_language(call.from_user.id)
+
         bot.send_message(
             call.message.chat.id,
-            "❌ پیام نامعتبر است."
+            get_text(language, "invalid_message")
         )
         return
 
     result = get_message(message_id)
 
     if not result:
+        language = get_user_language(call.from_user.id)
+
         bot.send_message(
             call.message.chat.id,
-            "❌ این پیام دیگر در دسترس نیست."
+            get_text(language, "message_not_available")
         )
         return
 
@@ -273,9 +299,11 @@ def reply_callback(call):
 
     # Only the receiver can reply
     if call.from_user.id != receiver_id:
+        language = get_user_language(call.from_user.id)
+
         bot.send_message(
             call.message.chat.id,
-            "❌ این پیام برای شما نیست."
+            get_text(language, "not_your_message")
         )
         return
 
@@ -284,9 +312,11 @@ def reply_callback(call):
         message_id
     )
 
+    language = get_user_language(call.from_user.id)
+
     bot.send_message(
         call.message.chat.id,
-        "✍️ پاسخ خودت رو بنویس."
+        get_text(language, "reply_prompt")
     )
 
 
@@ -310,23 +340,38 @@ def receive_message(message):
         result = get_message(message_id)
 
         if not result:
+            language = get_user_language(message.from_user.id)
+
             bot.send_message(
                 message.chat.id,
-                "❌ این پیام دیگر در دسترس نیست."
+                get_text(
+                    language,
+                    "message_not_available"
+                )
             )
+
             return
 
         sender_id, receiver_id = result
 
+        sender_language = get_user_language(sender_id)
+        receiver_language = get_user_language(receiver_id)
+
         bot.send_message(
             sender_id,
-            "💬 پاسخ جدید:\n\n"
-            f"{message.text}"
+            get_text(
+                sender_language,
+                "new_reply",
+                text=message.text
+            )
         )
 
         bot.send_message(
             message.chat.id,
-            "✅ پاسخ ارسال شد."
+            get_text(
+                receiver_language,
+                "reply_sent"
+            )
         )
 
         return
@@ -356,10 +401,12 @@ def receive_message(message):
         message=text
     )
 
-    receiver_text = (
-        "📩 پیام جدید\n\n"
-        "💬 پیام:\n"
-        f"{text}"
+    receiver_language = get_user_language(receiver_id)
+
+    receiver_text = get_text(
+        receiver_language,
+        "new_message",
+        text=text
     )
 
     bot.send_message(
@@ -377,9 +424,14 @@ def receive_message(message):
     print("Message:", text)
     print("-----------------------")
 
+    sender_language = get_user_language(sender_id)
+
     bot.send_message(
         message.chat.id,
-        "✅ پیامت با موفقیت دریافت شد."
+        get_text(
+            sender_language,
+            "message_sent"
+        )
     )
 
 
