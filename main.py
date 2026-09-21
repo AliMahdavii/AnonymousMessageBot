@@ -13,7 +13,9 @@ from database import (
     get_waiting_reply,
     delete_waiting_reply,
     save_user_language,
-    get_user_language
+    get_user_language,
+    save_user,
+    get_user
 )
 from keyboards import (
     main_keyboard,
@@ -25,6 +27,17 @@ from translations import get_text
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
+
+
+def log_event(title, data=None):
+    print("\n" + "=" * 60)
+    print(f"🔹 {title}")
+
+    if data:
+        for key, value in data.items():
+            print(f"   {key:<12}: {value}")
+
+    print("=" * 60)
 
 
 def setup_bot_menu():
@@ -52,6 +65,22 @@ setup_bot_menu()
 
 @bot.message_handler(commands=["start"])
 def start(message):
+
+    save_user(
+        user_id=message.from_user.id,
+        username=message.from_user.username,
+        first_name=message.from_user.first_name
+    )
+
+    log_event(
+        "👤 USER STARTED BOT",
+        {
+            "User ID": message.from_user.id,
+            "Username": message.from_user.username or "None",
+            "Name": message.from_user.first_name or "None"
+        }
+    )
+
     parts = message.text.split(maxsplit=1)
 
     # User opened someone's personal link
@@ -133,6 +162,14 @@ def language_callback(call):
     save_user_language(
         call.from_user.id,
         language
+    )
+
+    log_event(
+        "🌐 LANGUAGE CHANGED",
+        {
+            "User ID": call.from_user.id,
+            "Language": language
+        }
     )
 
     bot.answer_callback_query(call.id)
@@ -326,7 +363,14 @@ def reply_callback(call):
 
 @bot.message_handler(content_types=["text"])
 def receive_message(message):
+
     user_id = message.from_user.id
+
+    save_user(
+        user_id=message.from_user.id,
+        username=message.from_user.username,
+        first_name=message.from_user.first_name
+    )
 
     # -------------------------
     # Anonymous reply
@@ -364,6 +408,36 @@ def receive_message(message):
                 "new_reply",
                 text=message.text
             )
+        )
+
+        sender = get_user(sender_id)
+        receiver = get_user(receiver_id)
+
+        sender_username = sender[0] if sender else None
+        sender_first_name = sender[1] if sender else None
+
+        receiver_username = receiver[0] if receiver else None
+        receiver_first_name = receiver[1] if receiver else None
+
+        log_event(
+            "↩️ ANONYMOUS REPLY",
+            {
+                "Sender ID": receiver_id,
+                "Sender Username": (
+                    f"@{receiver_username}"
+                    if receiver_username
+                    else "None"
+                ),
+                "Sender Name": receiver_first_name or "None",
+                "Receiver ID": sender_id,
+                "Receiver Username": (
+                    f"@{sender_username}"
+                    if sender_username
+                    else "None"
+                ),
+                "Receiver Name": sender_first_name or "None",
+                "Message": message.text
+            }
         )
 
         bot.send_message(
@@ -416,13 +490,27 @@ def receive_message(message):
     )
 
     # Console logging
-    print("----- NEW MESSAGE -----")
-    print("Sender ID:", sender_id)
-    print("Receiver ID:", receiver_id)
-    print("Username:", username)
-    print("First name:", first_name)
-    print("Message:", text)
-    print("-----------------------")
+    receiver = get_user(receiver_id)
+
+    receiver_username = receiver[0] if receiver else None
+    receiver_first_name = receiver[1] if receiver else None
+
+    log_event(
+        "📩 NEW ANONYMOUS MESSAGE",
+        {
+            "Sender ID": sender_id,
+            "Sender Username": f"@{username}" if username else "None",
+            "Sender Name": first_name or "None",
+            "Receiver ID": receiver_id,
+            "Receiver Username": (
+                f"@{receiver_username}"
+                if receiver_username
+                else "None"
+            ),
+            "Receiver Name": receiver_first_name or "None",
+            "Message": text
+        }
+    )
 
     sender_language = get_user_language(sender_id)
 
@@ -439,6 +527,12 @@ def receive_message(message):
 # RUN BOT
 # =========================
 
-print("Bot is running...")
+log_event(
+    "BOT STARTED",
+    {
+        "Status": "Running",
+        "Bot": bot.get_me().username
+    }
+)
 
 bot.infinity_polling()

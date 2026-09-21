@@ -39,14 +39,61 @@ def create_table():
     """)
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        language TEXT NOT NULL DEFAULT 'fa'
-    )
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            first_name TEXT,
+            language TEXT NOT NULL DEFAULT 'fa'
+        )
     """)
 
     connection.commit()
     connection.close()
+
+
+def save_user(user_id, username, first_name):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO users (
+            user_id,
+            username,
+            first_name
+        )
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id)
+        DO UPDATE SET
+            username = excluded.username,
+            first_name = excluded.first_name
+    """, (
+        user_id,
+        username,
+        first_name
+    ))
+
+    connection.commit()
+    connection.close()
+
+
+def get_user(user_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT username, first_name
+        FROM users
+        WHERE user_id = ?
+    """, (user_id,))
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    if result:
+        return result
+
+    return None
 
 
 def save_message(
